@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼图生成器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Microsoft YaHei,sans-serif}
+body{background:#f0f0f0;padding:20px}
+.container{max-width:1600px;margin:0 auto}
+.header{text-align:center;margin:20px 0}
+.main{display:flex;gap:20px;flex-direction:column}
+@media(min-width:1200px){.main{flex-direction:row}}
+.left,.right{background:#fff;padding:20px;border-radius:0}
+.left{width:100%;max-width:480px}
+.right{flex:1}
+
+.upload-box{border:2px dashed #333;padding:30px;text-align:center;cursor:pointer;margin-bottom:15px;background:#f8f8f8}
+.upload-box:hover{background:#f0f0f0}
+.file-input{display:none}
+button{padding:10px 16px;background:#333;color:#fff;border:none;cursor:pointer;margin-right:8px;margin-bottom:8px;font-size:14px;border-radius:0}
+button.gray{background:#e0e0e0;color:#333}
+button:disabled{background:#999}
+button.download{background:#28a745;margin-top:15px}
+
+/* 列数选择样式 */
+.column-select{margin:12px 0;display:flex;align-items:center;gap:10px}
+.column-select label{font-size:14px;font-weight:600}
+.column-select select{padding:8px 12px;border:1px solid #333;border-radius:0;font-size:14px;min-width:80px}
+
+.preview-box{max-height:450px;overflow-y:auto;background:#f8f8f8;padding:10px}
+.item{display:flex;align-items:center;background:#fff;padding:8px;margin-bottom:6px}
+.item img{width:60px;height:60px;object-fit:cover;margin-right:10px}
+.item .name{flex:1;font-size:14px;word-break:break-all}
+.item .num{font-weight:bold;color:#333;width:30px;text-align:center;font-size:16px}
+
+.result-box{background:#cccccc;padding:12px}
+.result-box img{width:100%;display:block}
+.status{padding:10px;margin:10px 0;display:none}
+.status.success{background:#d4edda;color:#155724;display:block}
+.status.error{background:#f8d7da;color:#721c24;display:block}
+.empty{text-align:center;padding:40px;color:#999}
+
+/* 底部版权样式 */
+.footer{text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid #ddd;color:#999;font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header"><h2>拼图生成器</h2></div>
+    <div class="main">
+        <div class="left">
+            <div class="upload-box" id="uploadBox">点击或拖拽上传图片</div>
+            <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
+            
+            <div>
+                <button id="selectBtn">选择图片</button>
+                <button id="createBtn" disabled>生成拼图</button>
+                <button id="clearBtn" disabled>清空</button>
+            </div>
+
+            <!-- 每行数量选择 -->
+            <div class="column-select">
+                <label>每行图片数量：</label>
+                <select id="columnSelect">
+                    <option value="3">3张</option>
+                    <option value="4" selected>4张</option>
+                    <option value="5">5张</option>
+                    <option value="6">6张</option>
+                </select>
+            </div>
+
+            <div style="margin-top:10px">
+                <button class="gray" id="sortBtn">按文件名排序</button>
+                <button class="gray" id="reverseBtn">倒序</button>
+            </div>
+            <div class="status" id="status"></div>
+            
+            <h4 style="margin:15px 0 10px">已选图片（<span id="count">0</span>）</h4>
+            <div class="preview-box" id="previewList"></div>
+        </div>
+
+        <div class="right">
+            <h4>拼图预览</h4>
+            <div id="result"><div class="empty">生成后显示</div></div>
+            <button id="downloadBtn" class="download" style="display:none">下载高清大图</button>
+        </div>
+    </div>
+
+    <!-- 底部添加的说明文字 -->
+    <div class="footer">
+        拼图生成器 | 图片仅在前端处理，不会上传到服务器
+    </div>
+</div>
+
+<script>
+const uploadBox = document.getElementById('uploadBox');
+const fileInput = document.getElementById('fileInput');
+const selectBtn = document.getElementById('selectBtn');
+const createBtn = document.getElementById('createBtn');
+const clearBtn = document.getElementById('clearBtn');
+const sortBtn = document.getElementById('sortBtn');
+const reverseBtn = document.getElementById('reverseBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const previewList = document.getElementById('previewList');
+const count = document.getElementById('count');
+const result = document.getElementById('result');
+const status = document.getElementById('status');
+const columnSelect = document.getElementById('columnSelect');
+
+let images = [];
+
+// 上传事件绑定
+uploadBox.onclick = () => fileInput.click();
+selectBtn.onclick = () => fileInput.click();
+uploadBox.ondragover = e => e.preventDefault();
+uploadBox.ondrop = e => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
+    if(files.length) addFiles(files);
+};
+fileInput.onchange = e => addFiles(Array.from(e.target.files));
+
+// 排序功能
+sortBtn.onclick = () => {
+    if(!images.length) {show('没有图片可排序','error');return;}
+    images.sort((a,b)=>a.name.localeCompare(b.name));
+    renderPreview();
+    show('已按文件名排序','success');
+};
+reverseBtn.onclick = () => {
+    if(!images.length) {show('没有图片可排序','error');return;}
+    images.reverse();
+    renderPreview();
+    show('已倒序排列','success');
+};
+
+// 处理上传文件
+function addFiles(files){
+    if(images.length + files.length > 99){
+        show('最多支持99张图片','error');
+        return;
+    }
+    let loaded = 0;
+    files.forEach(file=>{
+        const reader = new FileReader();
+        reader.onload = e=>{
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = ()=>{
+                images.push({
+                    src: e.target.result,
+                    name: file.name,
+                    width: img.width,
+                    height: img.height
+                });
+                loaded++;
+                if(loaded === files.length){
+                    images.sort((a,b)=>a.name.localeCompare(b.name));
+                    renderPreview();
+                    createBtn.disabled = false;
+                    clearBtn.disabled = false;
+                    show(`成功加载 ${files.length} 张图片`,'success');
+                }
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// 渲染左侧预览列表
+function renderPreview(){
+    count.textContent = images.length;
+    previewList.innerHTML = '';
+    if(!images.length){
+        previewList.innerHTML = '<div class="empty">暂无图片</div>';
+        return;
+    }
+    images.forEach((img,idx)=>{
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `<img src="${img.src}"><div class="name">${img.name}</div><div class="num">${idx+1}</div>`;
+        previewList.appendChild(div);
+    });
+}
+
+// 核心生成逻辑
+createBtn.onclick = async ()=>{
+    if(!images.length){
+        show('请先上传图片','error');
+        return;
+    }
+    result.innerHTML = '<div style="padding:20px;text-align:center">生成中，请稍候...</div>';
+
+    // 核心参数
+    const COLUMNS = parseInt(columnSelect.value);
+    const GAP = 12;
+    const TOTAL_WIDTH = 1600;
+    const BG_COLOR = '#cccccc';
+    const NUM_COLOR = '#ffffff';
+
+    // 动态计算格子宽度
+    const CELL_WIDTH = (TOTAL_WIDTH - (COLUMNS + 1) * GAP) / COLUMNS;
+    const NUM_SIZE = Math.max(24, CELL_WIDTH / 6);
+
+    // 预加载所有图片
+    const imgList = [];
+    for(const item of images){
+        const img = new Image();
+        img.src = item.src;
+        await new Promise(r=>img.onload=r);
+        imgList.push(img);
+    }
+
+    // 计算每行高度
+    const rows = Math.ceil(imgList.length / COLUMNS);
+    const rowHeights = [];
+    for(let r=0;r<rows;r++){
+        let maxHeight = 0;
+        for(let c=0;c<COLUMNS;c++){
+            const idx = r * COLUMNS + c;
+            if(idx >= imgList.length) break;
+            const img = imgList[idx];
+            const scale = CELL_WIDTH / img.width;
+            const scaledHeight = img.height * scale;
+            if(scaledHeight > maxHeight) maxHeight = scaledHeight;
+        }
+        rowHeights.push(maxHeight);
+    }
+
+    // 计算画布总高度
+    const canvasHeight = rowHeights.reduce((sum,h)=>sum + h,0) + (rows + 1) * GAP;
+
+    // 创建画布
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = TOTAL_WIDTH;
+    canvas.height = canvasHeight;
+
+    // 填充背景
+    ctx.fillStyle = BG_COLOR;
+    ctx.fillRect(0, 0, TOTAL_WIDTH, canvasHeight);
+
+    // 设置序号样式
+    ctx.fillStyle = NUM_COLOR;
+    ctx.font = `bold ${NUM_SIZE}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = Math.max(2, NUM_SIZE / 16);
+
+    // 绘制图片+序号
+    let currentY = GAP;
+    for(let r=0;r<rows;r++){
+        const rowHeight = rowHeights[r];
+        for(let c=0;c<COLUMNS;c++){
+            const idx = r * COLUMNS + c;
+            if(idx >= imgList.length) break;
+            const img = imgList[idx];
+            const num = idx + 1;
+
+            const x = GAP + c * (CELL_WIDTH + GAP);
+            const y = currentY;
+
+            // 等比缩放
+            const scale = CELL_WIDTH / img.width;
+            const drawWidth = CELL_WIDTH;
+            const drawHeight = img.height * scale;
+            const offsetY = y + (rowHeight - drawHeight) / 2;
+
+            // 绘制图片
+            ctx.drawImage(img, x, offsetY, drawWidth, drawHeight);
+
+            // 绘制序号
+            const numX = x + drawWidth / 2;
+            const numY = offsetY + drawHeight - (NUM_SIZE * 0.6);
+            ctx.strokeText(`${num}`, numX, numY);
+            ctx.fillText(`${num}`, numX, numY);
+        }
+        currentY += rowHeight + GAP;
+    }
+
+    // 生成预览
+    const dataURL = canvas.toDataURL('image/png', 1.0);
+    result.innerHTML = `<div class="result-box"><img src="${dataURL}" id="finalImg"></div>`;
+    downloadBtn.style.display = 'inline-block';
+    show(`生成完成！当前为一行${COLUMNS}张`,'success');
+};
+
+// 下载功能
+downloadBtn.onclick = ()=>{
+    const img = document.getElementById('finalImg');
+    if(!img) return;
+    const a = document.createElement('a');
+    a.download = `拼图生成器_一行${columnSelect.value}张_${Date.now()}.png`;
+    a.href = img.src;
+    a.click();
+    show('开始下载高清大图','success');
+};
+
+// 清空功能
+clearBtn.onclick = ()=>{
+    images = [];
+    renderPreview();
+    result.innerHTML = '<div class="empty">生成后显示</div>';
+    downloadBtn.style.display = 'none';
+    createBtn.disabled = true;
+    clearBtn.disabled = true;
+    fileInput.value = '';
+    show('已清空所有图片','success');
+};
+
+// 状态提示
+function show(msg, type){
+    status.textContent = msg;
+    status.className = `status ${type}`;
+    setTimeout(()=>status.className='status', 2500);
+}
+
+// 初始化
+renderPreview();
+</script>
+</body>
+</html>
