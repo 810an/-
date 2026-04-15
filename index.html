@@ -14,7 +14,6 @@ body{background:#f0f0f0;padding:20px}
 .left,.right{background:#fff;padding:20px;border-radius:0}
 .left{width:100%;max-width:480px}
 .right{flex:1}
-
 .upload-box{border:2px dashed #333;padding:30px;text-align:center;cursor:pointer;margin-bottom:15px;background:#f8f8f8}
 .upload-box:hover{background:#f0f0f0}
 .file-input{display:none}
@@ -22,45 +21,43 @@ button{padding:10px 16px;background:#333;color:#fff;border:none;cursor:pointer;m
 button.gray{background:#e0e0e0;color:#333}
 button:disabled{background:#999}
 button.download{background:#28a745;margin-top:15px}
-
-/* 列数选择样式 */
 .column-select{margin:12px 0;display:flex;align-items:center;gap:10px}
 .column-select label{font-size:14px;font-weight:600}
 .column-select select{padding:8px 12px;border:1px solid #333;border-radius:0;font-size:14px;min-width:80px}
-
 .preview-box{max-height:450px;overflow-y:auto;background:#f8f8f8;padding:10px}
 .item{display:flex;align-items:center;background:#fff;padding:8px;margin-bottom:6px}
 .item img{width:60px;height:60px;object-fit:cover;margin-right:10px}
 .item .name{flex:1;font-size:14px;word-break:break-all}
 .item .num{font-weight:bold;color:#333;width:30px;text-align:center;font-size:16px}
-
 .result-box{background:#cccccc;padding:12px}
 .result-box img{width:100%;display:block}
 .status{padding:10px;margin:10px 0;display:none}
 .status.success{background:#d4edda;color:#155724;display:block}
 .status.error{background:#f8d7da;color:#721c24;display:block}
 .empty{text-align:center;padding:40px;color:#999}
-
-/* 底部版权样式 */
 .footer{text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid #ddd;color:#999;font-size:14px}
+.setting-row{margin:12px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.setting-row label{min-width:100px;font-size:14px;font-weight:600}
+.setting-row input[type="range"]{flex:1;min-width:140px}
+.setting-row select{padding:8px 12px;border:1px solid #333;border-radius:0}
+.color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-top:6px}
+.color-item{width:24px;height:24px;border:1px solid #ccc;cursor:pointer}
+.watermark-area{border:2px dashed #666;padding:16px;text-align:center;cursor:pointer;margin:10px 0;background:#f9f9f9}
 </style>
 </head>
 <body>
-
 <div class="container">
-    <div class="header"><h2>拼图生成器</h2></div>
+    <div class="header"><h2>捌壹零拼图生成器</h2></div>
     <div class="main">
         <div class="left">
             <div class="upload-box" id="uploadBox">点击或拖拽上传图片</div>
             <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
-            
             <div>
                 <button id="selectBtn">选择图片</button>
                 <button id="createBtn" disabled>生成拼图</button>
                 <button id="clearBtn" disabled>清空</button>
             </div>
 
-            <!-- 每行数量选择 -->
             <div class="column-select">
                 <label>每行图片数量：</label>
                 <select id="columnSelect">
@@ -71,6 +68,55 @@ button.download{background:#28a745;margin-top:15px}
                 </select>
             </div>
 
+            <!-- 数字大小：20-200px 真实大小，拉滑块变化明显 -->
+            <div class="setting-row">
+                <label>数字大小：</label>
+                <input type="range" id="numSize" min="20" max="200" value="60">
+                <span id="numSizeVal">60px</span>
+            </div>
+
+            <div class="setting-row">
+                <label>数字位置：</label>
+                <select id="numPos">
+                    <option value="tl">左上</option>
+                    <option value="tr">右上</option>
+                    <option value="bl">左下</option>
+                    <option value="br" selected>右下</option>
+                    <option value="tc">中上</option>
+                    <option value="bc">中下</option>
+                    <option value="cc">正中</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label>数字颜色：</label>
+                <div class="color-grid" id="colorGrid"></div>
+            </div>
+
+            <div class="setting-row">
+                <label>水印模式：</label>
+                <select id="wmMode">
+                    <option value="none">无水印</option>
+                    <option value="normal" selected>普通（铺满）</option>
+                    <option value="cover">覆盖（铺满）</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label>水印大小：</label>
+                <input type="range" id="wmScale" min="10" max="200" value="100">
+                <span id="wmScaleVal">100%</span>
+            </div>
+
+            <div class="setting-row">
+                <label>水印透明度：</label>
+                <input type="range" id="wmAlpha" min="10" max="100" value="40">
+                <span id="wmAlphaVal">40%</span>
+            </div>
+
+            <div class="watermark-area" id="wmBox">上传水印图片</div>
+            <input type="file" id="wmInput" class="file-input" accept="image/*">
+
             <div style="margin-top:10px">
                 <button class="gray" id="sortBtn">按文件名排序</button>
                 <button class="gray" id="reverseBtn">倒序</button>
@@ -80,18 +126,13 @@ button.download{background:#28a745;margin-top:15px}
             <h4 style="margin:15px 0 10px">已选图片（<span id="count">0</span>）</h4>
             <div class="preview-box" id="previewList"></div>
         </div>
-
         <div class="right">
             <h4>拼图预览</h4>
             <div id="result"><div class="empty">生成后显示</div></div>
             <button id="downloadBtn" class="download" style="display:none">下载拼图</button>
         </div>
     </div>
-
-    <!-- 底部添加的说明文字 -->
-    <div class="footer">
-        捌壹零拼图生成器 | 图片仅在前端处理，不会上传到服务器
-    </div>
+    <div class="footer">捌壹零拼图生成器 | 图片仅在前端处理，不会上传到服务器</div>
 </div>
 
 <script>
@@ -108,214 +149,329 @@ const count = document.getElementById('count');
 const result = document.getElementById('result');
 const status = document.getElementById('status');
 const columnSelect = document.getElementById('columnSelect');
+const numSize = document.getElementById('numSize');
+const numSizeVal = document.getElementById('numSizeVal');
+const numPos = document.getElementById('numPos');
+const colorGrid = document.getElementById('colorGrid');
+const wmMode = document.getElementById('wmMode');
+const wmScale = document.getElementById('wmScale');
+const wmScaleVal = document.getElementById('wmScaleVal');
+const wmAlpha = document.getElementById('wmAlpha');
+const wmAlphaVal = document.getElementById('wmAlphaVal');
+const wmBox = document.getElementById('wmBox');
+const wmInput = document.getElementById('wmInput');
 
 let images = [];
+let wmImage = null;
+let numColor = '#ffffff';
 
-// 上传事件绑定
-uploadBox.onclick = () => fileInput.click();
-selectBtn.onclick = () => fileInput.click();
-uploadBox.ondragover = e => e.preventDefault();
-uploadBox.ondrop = e => {
-    e.preventDefault();
-    const files = Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
-    if(files.length) addFiles(files);
+// 16种常用颜色
+const colors = ['#fff','#000','#f00','#0f0','#00f','#ff0','#0ff','#f0f','#f90','#90f','#f69','#3c3','#19f','#f40','#da2','#888'];
+colors.forEach(c=>{
+    let d=document.createElement('div');
+    d.className='color-item';
+    d.style.backgroundColor=c;
+    d.onclick=()=>{
+        numColor=c;
+        show('颜色已选','success');
+    };
+    colorGrid.appendChild(d);
+});
+
+// 滑块数值同步
+numSize.oninput=()=>{numSizeVal.textContent=numSize.value+'px';};
+wmScale.oninput=()=>{wmScaleVal.textContent=wmScale.value+'%';};
+wmAlpha.oninput=()=>{wmAlphaVal.textContent=wmAlpha.value+'%';};
+
+// 水印上传
+wmBox.onclick=()=>wmInput.click();
+wmInput.onchange=e=>{
+    let f=e.target.files[0];
+    if(!f) return;
+    let r=new FileReader();
+    r.onload=ev=>{
+        let img=new Image();
+        img.src=ev.target.result;
+        img.onload=()=>{
+            wmImage=img;
+            show('水印已加载','success');
+        };
+    };
+    r.readAsDataURL(f);
 };
-fileInput.onchange = e => addFiles(Array.from(e.target.files));
 
-// 排序功能
-sortBtn.onclick = () => {
-    if(!images.length) {show('没有图片可排序','error');return;}
+// 图片上传
+uploadBox.onclick=()=>fileInput.click();
+selectBtn.onclick=()=>fileInput.click();
+uploadBox.ondragover=e=>e.preventDefault();
+uploadBox.ondrop=e=>{
+    e.preventDefault();
+    addFiles(Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')));
+};
+fileInput.onchange=e=>addFiles(Array.from(e.target.files));
+
+// 排序/倒序
+sortBtn.onclick=()=>{
+    if(!images.length){show('无图片','error');return;}
     images.sort((a,b)=>a.name.localeCompare(b.name));
     renderPreview();
     show('已按文件名排序','success');
 };
-reverseBtn.onclick = () => {
-    if(!images.length) {show('没有图片可排序','error');return;}
+reverseBtn.onclick=()=>{
+    if(!images.length){show('无图片','error');return;}
     images.reverse();
     renderPreview();
-    show('已倒序排列','success');
+    show('已倒序','success');
 };
 
-// 处理上传文件
+// 添加图片文件
 function addFiles(files){
-    if(images.length + files.length > 99){
+    if(images.length+files.length>99){
         show('最多支持99张图片','error');
         return;
     }
-    let loaded = 0;
+    let loaded=0;
     files.forEach(file=>{
-        const reader = new FileReader();
-        reader.onload = e=>{
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = ()=>{
+        let r=new FileReader();
+        r.onload=e=>{
+            let img=new Image();
+            img.src=e.target.result;
+            img.onload=()=>{
                 images.push({
-                    src: e.target.result,
-                    name: file.name,
-                    width: img.width,
-                    height: img.height
+                    src:e.target.result,
+                    name:file.name,
+                    width:img.width,
+                    height:img.height
                 });
                 loaded++;
-                if(loaded === files.length){
+                if(loaded===files.length){
                     images.sort((a,b)=>a.name.localeCompare(b.name));
                     renderPreview();
-                    createBtn.disabled = false;
-                    clearBtn.disabled = false;
-                    show(`成功加载 ${files.length} 张图片`,'success');
+                    createBtn.disabled=false;
+                    clearBtn.disabled=false;
+                    show(`成功加载${files.length}张图片`,'success');
                 }
             };
         };
-        reader.readAsDataURL(file);
+        r.readAsDataURL(file);
     });
 }
 
-// 渲染左侧预览列表
+// 渲染预览列表
 function renderPreview(){
-    count.textContent = images.length;
-    previewList.innerHTML = '';
+    count.textContent=images.length;
+    previewList.innerHTML='';
     if(!images.length){
-        previewList.innerHTML = '<div class="empty">暂无图片</div>';
+        previewList.innerHTML='<div class="empty">暂无图片</div>';
         return;
     }
     images.forEach((img,idx)=>{
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `<img src="${img.src}"><div class="name">${img.name}</div><div class="num">${idx+1}</div>`;
-        previewList.appendChild(div);
+        let d=document.createElement('div');
+        d.className='item';
+        d.innerHTML=`<img src="${img.src}"><div class="name">${img.name}</div><div class="num">${idx+1}</div>`;
+        previewList.appendChild(d);
     });
 }
 
-// 核心生成逻辑
-createBtn.onclick = async ()=>{
+// 核心：生成拼图
+createBtn.onclick=async ()=>{
     if(!images.length){
         show('请先上传图片','error');
         return;
     }
-    result.innerHTML = '<div style="padding:20px;text-align:center">生成中，请稍候...</div>';
+    result.innerHTML='<div style="padding:20px">生成中...</div>';
 
-    // 核心参数
-    const COLUMNS = parseInt(columnSelect.value);
-    const GAP = 12;
-    const TOTAL_WIDTH = 1600;
-    const BG_COLOR = '#cccccc';
-    const NUM_COLOR = '#ffffff';
+    // 基础参数
+    const COL=parseInt(columnSelect.value);
+    const GAP=12;
+    const CW=1600; // 画布宽度
+    const BG='#ccc'; // 背景色
+    const FONT_SIZE=parseInt(numSize.value); // 真实字号，直接用
+    const POS=numPos.value;
+    const CELL=(CW-(COL+1)*GAP)/COL; // 单格宽度
+    const alpha=wmAlpha.value/100; // 透明度
+    const scale=wmScale.value/100; // 水印缩放
 
-    // 动态计算格子宽度
-    const CELL_WIDTH = (TOTAL_WIDTH - (COLUMNS + 1) * GAP) / COLUMNS;
-    const NUM_SIZE = Math.max(24, CELL_WIDTH / 6);
-
-    // 预加载所有图片
-    const imgList = [];
-    for(const item of images){
-        const img = new Image();
-        img.src = item.src;
-        await new Promise(r=>img.onload=r);
-        imgList.push(img);
+    // 加载所有图片
+    let imgList=[];
+    for(let it of images){
+        let i=new Image();
+        i.src=it.src;
+        await new Promise(r=>i.onload=r);
+        imgList.push(i);
     }
 
     // 计算每行高度
-    const rows = Math.ceil(imgList.length / COLUMNS);
-    const rowHeights = [];
+    let rows=Math.ceil(imgList.length/COL);
+    let rh=[];
     for(let r=0;r<rows;r++){
-        let maxHeight = 0;
-        for(let c=0;c<COLUMNS;c++){
-            const idx = r * COLUMNS + c;
-            if(idx >= imgList.length) break;
-            const img = imgList[idx];
-            const scale = CELL_WIDTH / img.width;
-            const scaledHeight = img.height * scale;
-            if(scaledHeight > maxHeight) maxHeight = scaledHeight;
+        let m=0;
+        for(let c=0;c<COL;c++){
+            let idx=r*COL+c;
+            if(idx>=imgList.length) break;
+            let i=imgList[idx];
+            let h=i.height*CELL/i.width;
+            if(h>m) m=h;
         }
-        rowHeights.push(maxHeight);
+        rh.push(m);
     }
 
-    // 计算画布总高度
-    const canvasHeight = rowHeights.reduce((sum,h)=>sum + h,0) + (rows + 1) * GAP;
-
-    // 创建画布
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = TOTAL_WIDTH;
-    canvas.height = canvasHeight;
+    // 计算总高度，创建画布
+    const totalH=rh.reduce((a,b)=>a+b,0)+(rows+1)*GAP;
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d');
+    canvas.width=CW;
+    canvas.height=totalH;
 
     // 填充背景
-    ctx.fillStyle = BG_COLOR;
-    ctx.fillRect(0, 0, TOTAL_WIDTH, canvasHeight);
+    ctx.fillStyle=BG;
+    ctx.fillRect(0,0,CW,totalH);
 
-    // 设置序号样式
-    ctx.fillStyle = NUM_COLOR;
-    ctx.font = `bold ${NUM_SIZE}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = Math.max(2, NUM_SIZE / 16);
+    // 数字样式
+    ctx.fillStyle=numColor;
+    ctx.font=`bold ${FONT_SIZE}px Arial`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.strokeStyle='#000';
+    ctx.lineWidth=Math.max(3, FONT_SIZE/10); // 描边随字号变大
 
-    // 绘制图片+序号
-    let currentY = GAP;
+    // 绘制图片+数字
+    let cy=GAP;
     for(let r=0;r<rows;r++){
-        const rowHeight = rowHeights[r];
-        for(let c=0;c<COLUMNS;c++){
-            const idx = r * COLUMNS + c;
-            if(idx >= imgList.length) break;
-            const img = imgList[idx];
-            const num = idx + 1;
-
-            const x = GAP + c * (CELL_WIDTH + GAP);
-            const y = currentY;
-
-            // 等比缩放
-            const scale = CELL_WIDTH / img.width;
-            const drawWidth = CELL_WIDTH;
-            const drawHeight = img.height * scale;
-            const offsetY = y + (rowHeight - drawHeight) / 2;
+        let h=rh[r];
+        for(let c=0;c<COL;c++){
+            let idx=r*COL+c;
+            if(idx>=imgList.length) break;
+            let i=imgList[idx];
+            let n=idx+1;
+            let x=GAP+c*(CELL+GAP);
+            let w=CELL;
+            let ih=i.height*w/i.width;
+            let oy=cy+(h-ih)/2;
 
             // 绘制图片
-            ctx.drawImage(img, x, offsetY, drawWidth, drawHeight);
+            ctx.drawImage(i,x,oy,w,ih);
 
-            // 绘制序号
-            const numX = x + drawWidth / 2;
-            const numY = offsetY + drawHeight - (NUM_SIZE * 0.6);
-            ctx.strokeText(`${num}`, numX, numY);
-            ctx.fillText(`${num}`, numX, numY);
+            // 计算数字位置
+            let nx=x+w/2, ny=oy+ih/2;
+            ctx.textAlign='center';
+            ctx.textBaseline='middle';
+            if(POS==='tl'){
+                nx=x+8;
+                ny=oy+8;
+                ctx.textAlign='left';
+                ctx.textBaseline='top';
+            }
+            if(POS==='tr'){
+                nx=x+w-8;
+                ny=oy+8;
+                ctx.textAlign='right';
+                ctx.textBaseline='top';
+            }
+            if(POS==='bl'){
+                nx=x+8;
+                ny=oy+ih-8;
+                ctx.textAlign='left';
+                ctx.textBaseline='bottom';
+            }
+            if(POS==='br'){
+                nx=x+w-8;
+                ny=oy+ih-8;
+                ctx.textAlign='right';
+                ctx.textBaseline='bottom';
+            }
+            if(POS==='tc'){
+                nx=x+w/2;
+                ny=oy+8;
+                ctx.textAlign='center';
+                ctx.textBaseline='top';
+            }
+            if(POS==='bc'){
+                nx=x+w/2;
+                ny=oy+ih-8;
+                ctx.textAlign='center';
+                ctx.textBaseline='bottom';
+            }
+            if(POS==='cc'){
+                nx=x+w/2;
+                ny=oy+ih/2;
+                ctx.textAlign='center';
+                ctx.textBaseline='middle';
+            }
+
+            // 绘制数字（描边+填充）
+            ctx.strokeText(n, nx, ny);
+            ctx.fillText(n, nx, ny);
         }
-        currentY += rowHeight + GAP;
+        cy+=h+GAP;
+    }
+
+    // 绘制水印（普通/覆盖 都无缝铺满）
+    if(wmImage && wmMode.value!=='none'){
+        let wmw = wmImage.width * scale;
+        let wmh = wmImage.height * scale;
+        let mode = wmMode.value;
+
+        // 覆盖模式：提高透明度，多层叠加，仿例图效果
+        if(mode === 'cover'){
+            ctx.globalAlpha = Math.min(alpha * 1.5, 1);
+            // 双层错位叠加，实现强覆盖
+            for(let offset=0; offset<2; offset++){
+                for(let ty=-wmh/2; ty<totalH+wmh; ty+=wmh){
+                    for(let tx=-wmw/2; tx<CW+wmw; tx+=wmw){
+                        ctx.drawImage(wmImage, tx + offset*wmw/2, ty + offset*wmh/2, wmw, wmh);
+                    }
+                }
+            }
+        }else{
+            // 普通模式：单层无缝铺满
+            ctx.globalAlpha = alpha;
+            for(let ty=0; ty<totalH; ty+=wmh){
+                for(let tx=0; tx<CW; tx+=wmw){
+                    ctx.drawImage(wmImage, tx, ty, wmw, wmh);
+                }
+            }
+        }
+        ctx.globalAlpha = 1;
     }
 
     // 生成预览
-    const dataURL = canvas.toDataURL('image/png', 1.0);
-    result.innerHTML = `<div class="result-box"><img src="${dataURL}" id="finalImg"></div>`;
-    downloadBtn.style.display = 'inline-block';
-    show(`生成完成！当前为一行${COLUMNS}张`,'success');
+    let url=canvas.toDataURL('image/png',1);
+    result.innerHTML=`<div class="result-box"><img src="${url}" id="finalImg"></div>`;
+    downloadBtn.style.display='inline-block';
+    show('生成完成','success');
 };
 
-// 下载功能
-downloadBtn.onclick = ()=>{
-    const img = document.getElementById('finalImg');
+// 下载拼图
+downloadBtn.onclick=()=>{
+    let img=document.getElementById('finalImg');
     if(!img) return;
-    const a = document.createElement('a');
-    a.download = `拼图生成器_一行${columnSelect.value}张_${Date.now()}.png`;
-    a.href = img.src;
+    let a=document.createElement('a');
+    a.download=`捌壹零拼图_${Date.now()}.png`;
+    a.href=img.src;
     a.click();
-    show('开始下载高清大图','success');
+    show('下载中','success');
 };
 
-// 清空功能
-clearBtn.onclick = ()=>{
-    images = [];
+// 清空所有
+clearBtn.onclick=()=>{
+    images=[];
+    wmImage=null;
+    fileInput.value='';
+    wmInput.value='';
     renderPreview();
-    result.innerHTML = '<div class="empty">生成后显示</div>';
-    downloadBtn.style.display = 'none';
-    createBtn.disabled = true;
-    clearBtn.disabled = true;
-    fileInput.value = '';
-    show('已清空所有图片','success');
+    result.innerHTML='<div class="empty">生成后显示</div>';
+    downloadBtn.style.display='none';
+    createBtn.disabled=true;
+    clearBtn.disabled=true;
+    show('已清空','success');
 };
 
 // 状态提示
-function show(msg, type){
-    status.textContent = msg;
-    status.className = `status ${type}`;
-    setTimeout(()=>status.className='status', 2500);
+function show(msg,t){
+    status.textContent=msg;
+    status.className=`status ${t}`;
+    setTimeout(()=>status.className='status',2500);
 }
 
 // 初始化
